@@ -1,6 +1,9 @@
 #pragma once
 
 #include <UGVModule.h>
+#include "SMObjects.h"
+
+
 
 ref class ThreadManagement : public UGVModule {
 public:
@@ -15,10 +18,18 @@ public:
 
     // Get Shutdown signal for module, from Thread Management SM
     bool getShutdownFlag() override;
+    
+    error_state processHeartBeats() override;
 
     // Thread function for TMM
     void threadFunction() override;
 
 private:
-    // Add any additional data members or helper functions here
+    SM_Laser^ SM_LiDAR_;
+    SM_GPS^ SM_GNSS_;
+    SM_VehicleControl^ SM_VC_;
+    SM_Display^ SM_Display_;
+
+    array<Stopwatch^>^ StopwatchList;
+    array<Thread^>^ ThreadList;
 };

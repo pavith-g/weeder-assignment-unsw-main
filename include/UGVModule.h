@@ -48,6 +48,13 @@ ref class UGVModule abstract
 		virtual void threadFunction() = 0;
 
 		/**
+		* Process heartbeats of threads
+		*/
+		virtual error_state processHeartBeats() = 0;
+
+		virtual error_state SetupSharedMemory() = 0;
+
+		/**
 		 * A helper function for printing a helpful error message based on the error type
 		 * returned from a function
 		 *
