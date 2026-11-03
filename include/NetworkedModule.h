@@ -18,12 +18,49 @@ For clarification of inheritance requirements see diagram in the assignment spec
 //#define WEEDER_ADDRESS "192.168.1.200"
 #define DISPLAY_ADDRESS "127.0.0.1" // Display is always running locally (run the MATLAB code separately)
 
+namespace ports {
+	static const int LiDAR = 23000;
+	static const int GNSS = 24000;
+	static const int VC = 25000;
+}
+
 ref class NetworkedModule abstract : public UGVModule
 {
-	public:
-		virtual error_state connect(String^ hostName, int portNumber) = 0;	// Establish TCP connection
-		virtual error_state communicate() = 0;								// Communicate over TCP connection (includes any error checking required on data)
+public:
+	virtual error_state connect(String^ hostName, int portNumber) = 0;	// Establish TCP connection
+	virtual error_state communicate() = 0;								// Communicate over TCP connection (includes any error checking required on data)
+	void disconnect()													// Release existing connections
+	{
+		if (Stream != nullptr)
+		{
+			try
+			{
+				Stream->Close();
+			}
+			catch (Exception^) {}
+			finally
+			{
+				Stream = nullptr;
+			}
+		}
 
+		if (Client != nullptr)
+		{
+			try
+			{
+				Client->Close();
+			}
+			catch (Exception^) {}
+			finally
+			{
+				Client = nullptr;
+			}
+		}
+
+		ReadData = nullptr;
+	}
+	virtual error_state authenticate(String^ id) { return error_state::ERR_CONNECTION;  }
+	
 	protected:
 		TcpClient^ Client;					// Handle for TCP connection
 		NetworkStream^ Stream;				// Handle for TCP data stream

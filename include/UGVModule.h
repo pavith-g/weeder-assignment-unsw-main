@@ -14,6 +14,8 @@ For clarification of inheritance requirements see diagram in the assignment spec
 #include <iostream>
 #include <SMObjects.h>
 
+#define CRASH_LIMIT 150
+
 // ERROR HANDLING. Use this as the return value in your functions
 enum error_state {
 	SUCCESS,
@@ -21,7 +23,8 @@ enum error_state {
 	ERR_NO_DATA,
 	ERR_INVALID_DATA,
 	ERR_SM,
-	ERR_CONNECTION
+	ERR_CONNECTION,
+	ERR_CRITICAL_THREAD_FAILURE
 	// Define your own additional error types as needed
 };
 
@@ -54,6 +57,10 @@ ref class UGVModule abstract
 
 		virtual error_state SetupSharedMemory() = 0;
 
+		virtual void outputDataToTerminal() = 0;
+
+		virtual void selfShutDown() = 0;
+
 		/**
 		 * A helper function for printing a helpful error message based on the error type
 		 * returned from a function
@@ -73,7 +80,20 @@ ref class UGVModule abstract
 				case ERR_INVALID_DATA:
 					std::cout << "ERROR: Invalid Data Received." << std::endl;
 					break;
-				// ADD PRINTOUTS FOR OTHER ERROR TYPES
+				case ERR_SM:
+					std::cout << "ERROR: Shared Memory Error." << std::endl;
+					break;
+				case ERR_CONNECTION:
+					std::cout << "ERROR: Connection Error." << std::endl;
+					break;
+
+				case ERR_CRITICAL_THREAD_FAILURE:
+					std::cout << "ERROR: Critical Thread Failure." << std::endl;
+					break;
+
+				default:
+					std::cout << "undefined error." << std::endl;
+
 			}
 		}
 
