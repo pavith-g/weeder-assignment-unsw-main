@@ -46,7 +46,7 @@ error_state ThreadManagement::processHeartBeats() {
 		}
 
 		else
-		{
+		{	
 			if (SM_TM_->WatchList[i]->ElapsedMilliseconds > CRASH_LIMIT)
 			{
 				// Check if critical
@@ -124,6 +124,7 @@ void ThreadManagement::threadFunction() {
 
 			if (keyInfo->Key == ConsoleKey::Q) {
 				shutdownModules();
+				break;
 			}
 		}
 		// Console::WriteLine("TMM thread Running");
@@ -142,7 +143,7 @@ void ThreadManagement::threadFunction() {
 	}
 
 	Console::WriteLine("TMM Terminated");
-	while (1);
+	// while (1);
 }
 
 

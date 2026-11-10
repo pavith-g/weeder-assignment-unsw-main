@@ -140,6 +140,8 @@ error_state LiDAR::communicate()
 		return error_state::ERR_INVALID_DATA;
 	}
 
+	double startAngle = Convert::ToInt32(tokens[distIndex + 3], 16) / 10000.0;
+	double angleWidth = Convert::ToInt32(tokens[distIndex + 4], 16) / 10000.0;
 	int numPoints = Convert::ToInt32(tokens[distIndex + 5], 16);
 	int dataStartIndex = distIndex + 6;
 
@@ -148,20 +150,24 @@ error_state LiDAR::communicate()
 		return error_state::ERR_INVALID_DATA;
 	}
 
+
 	// Store data
 	for (int i = 0; i < STANDARD_LASER_LENGTH; i++)
 	{
 		uint16_t distMm = Convert::ToUInt16(tokens[dataStartIndex + i], 16);
-		double angleRad = (i * 0.5) * (Math::PI / 180.0);
+
+		// double angleRad = (i * 0.5) * (Math::PI / 180.0);
+		double angleDegrees = i * angleWidth + startAngle;
+		double angleRad = angleDegrees * (Math::PI / 180.0);
+		
 
 		Monitor::Enter(SM_LiDAR_);
 		try
 		{
-			double x = -distMm * Math::Sin(angleRad);
+			double x = distMm * Math::Sin(angleRad);
 			double y = -distMm * Math::Cos(angleRad);
 			SM_LiDAR_->x[i] = x;
 			SM_LiDAR_->y[i] = y;
-			// Console::Write("{0}, {1}", x, y);
 		}
 		catch (Exception^)
 		{
@@ -171,9 +177,7 @@ error_state LiDAR::communicate()
 		{
 			Monitor::Exit(SM_LiDAR_);
 		}
-
 	}
-
 	return error_state::SUCCESS;
 }
 
@@ -198,7 +202,7 @@ void LiDAR::outputDataToTerminal()
 	static int frameCount = 0;
 	frameCount++;
 
-	if (frameCount >= 100)
+	if (frameCount >= 50)
 	{
 		frameCount = 0;
 
@@ -218,7 +222,7 @@ void LiDAR::outputDataToTerminal()
 					sb->AppendLine();
 				}
 			}
-			sb->AppendLine("========================================================================");
+			sb->AppendLine("=================================================================================");
 
 			Console::Write(sb->ToString());
 		}
