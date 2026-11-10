@@ -94,6 +94,7 @@
     <Link>
       <AdditionalDependencies>ControllerInterface_x64_Debug.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)\libs</AdditionalLibraryDirectories>
+      <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
