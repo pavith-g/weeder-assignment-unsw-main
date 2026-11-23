@@ -16,7 +16,7 @@ public:
 	error_state communicate() override;
 	error_state authenticate(String^ id) override;
 	void sendCommand(String^ command);
-	void outputDataToTerminal() override;
+	void outputDataToTerminal();
 	error_state	SetupSharedMemory() override;
 	error_state processHeartBeats() override;
 	error_state processSharedMemory() override;

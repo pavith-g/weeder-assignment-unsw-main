@@ -289,7 +289,6 @@ void LiDAR::threadFunction()
 	SM_TM_->ThreadBarrier->SignalAndWait();
 
 	LiDAR_Stopwatch->Start();
-	Console::WriteLine(getShutdownFlag());
 	while (!getShutdownFlag())
 	{
 		error_state response;
