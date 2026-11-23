@@ -22,6 +22,7 @@ namespace ports {
 	static const int LiDAR = 23000;
 	static const int GNSS = 24000;
 	static const int VC = 25000;
+	static const int DISPLAY = 28000;
 }
 
 ref class NetworkedModule abstract : public UGVModule

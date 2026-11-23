@@ -57,8 +57,6 @@ ref class UGVModule abstract
 
 		virtual error_state SetupSharedMemory() = 0;
 
-		virtual void outputDataToTerminal() = 0;
-
 		virtual void selfShutDown() = 0;
 
 		/**

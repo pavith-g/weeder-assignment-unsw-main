@@ -1,5 +1,6 @@
 #include "TMM.h"
 #include "LiDAR.h"
+#include "Display.h"
 
 
 
@@ -8,14 +9,9 @@ error_state ThreadManagement::SetupSharedMemory() {
 	SM_TM_ = gcnew SM_ThreadManagement;
 	SM_LiDAR_ = gcnew SM_Laser;
 	SM_GNSS_ = gcnew SM_GPS;
-	SM_Display_ = gcnew SM_Display;
 	SM_VC_ = gcnew SM_VehicleControl;
 
 	return error_state::SUCCESS;
-}
-
-void ThreadManagement::outputDataToTerminal() {
-
 }
 	
 error_state ThreadManagement::processSharedMemory() {
@@ -84,6 +80,13 @@ void ThreadManagement::threadFunction() {
 			gcnew ThreadStart(gcnew LiDAR(SM_TM_, SM_LiDAR_),
 				&LiDAR::threadFunction),
 			"LiDAR Thread", bit_LASER
+		),
+
+		gcnew ThreadProperties
+		(
+			gcnew ThreadStart(gcnew Display(SM_TM_, SM_LiDAR_, SM_GNSS_),
+				&Display::threadFunction),
+			"Display Thread", bit_DISPLAY
 		),
 			// Add Other Threads Later
 	};

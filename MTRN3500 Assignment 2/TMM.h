@@ -36,8 +36,6 @@ public:
     
     error_state processHeartBeats() override;
 
-    void outputDataToTerminal() override;
-
     // Thread function for TMM
     void threadFunction() override;
 
@@ -47,7 +45,6 @@ private:
     SM_Laser^ SM_LiDAR_;
     SM_GPS^ SM_GNSS_;
     SM_VehicleControl^ SM_VC_;
-    SM_Display^ SM_Display_;
 
     array<Thread^>^ ThreadList;
     array<ThreadProperties^>^ ThreadPropertiesList;
