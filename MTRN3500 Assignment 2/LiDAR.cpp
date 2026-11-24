@@ -8,51 +8,7 @@ LiDAR::LiDAR(SM_ThreadManagement^ SM_TM, SM_Laser^ SM_LiDAR)
 	SM_LiDAR_ = SM_LiDAR;
 	SM_TM_ = SM_TM;
 	LiDAR_Stopwatch = gcnew Stopwatch;
-}
-
-error_state LiDAR::connect(String^ hostName, int portNumber)
-{
-	Console::WriteLine("Attempting to connect to LiDAR");
-	disconnect();
-
-	ReadData = gcnew array<unsigned char>(2048);
-
-	try
-	{
-		Client = gcnew TcpClient();
-
-		Client->ReceiveBufferSize = 2048;
-		Client->ReceiveTimeout = 500;
-		Client->NoDelay = true;
-
-		IAsyncResult^ asyncResult = Client->BeginConnect(hostName, portNumber, nullptr, nullptr);
-		bool connected = asyncResult->AsyncWaitHandle->WaitOne(1500, false);
-
-		if (!connected)
-		{
-			disconnect();
-			return error_state::ERR_CONNECTION;
-		}
-
-		Client->EndConnect(asyncResult);
-
-
-		if (!Client->Connected)
-		{
-			disconnect();
-			return error_state::ERR_STARTUP;
-		}
-
-		Stream = Client->GetStream();
-		ReadData = gcnew array<unsigned char>(Client->ReceiveBufferSize);
-		return error_state::SUCCESS;
-	}
-
-	catch (Exception^)
-	{
-		disconnect();
-		return error_state::ERR_STARTUP;
-	}
+	ReadData = gcnew array<unsigned char>(4096);
 }
 
 error_state LiDAR::authenticate(String^ id) {

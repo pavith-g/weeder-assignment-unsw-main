@@ -11,8 +11,6 @@ ref class LiDAR : public NetworkedModule
 public:
 	LiDAR(SM_ThreadManagement^ SM_TM, SM_Laser^ SM_LiDAR);
 
-
-	error_state connect(String^ hostName, int portNumber) override;
 	error_state communicate() override;
 	error_state authenticate(String^ id) override;
 	void sendCommand(String^ command);
