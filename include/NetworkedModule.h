@@ -68,7 +68,20 @@ public:
 			return error_state::ERR_STARTUP;
 		}
 	}
+	virtual error_state verifyConnection() {
+		if (Client == nullptr || Stream == nullptr || !Client->Connected) {
+			disconnect();
+			return error_state::ERR_CONNECTION;
+		}
+		
+		if (Client->Client->Poll(0, System::Net::Sockets::SelectMode::SelectRead) &&
+			Client->Client->Available == 0) {
+			disconnect();
+			return error_state::ERR_CONNECTION;
+		}
 
+		return error_state::SUCCESS;
+	}
 	virtual error_state communicate() = 0;								// Communicate over TCP connection (includes any error checking required on data)
 	void disconnect()													// Release existing connections
 	{
