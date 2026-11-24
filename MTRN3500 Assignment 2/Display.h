@@ -8,7 +8,6 @@ ref class Display : public NetworkedModule
 public:
 	Display(SM_ThreadManagement^ SM_TM, SM_Laser^ SM_LiDAR, SM_GPS^ SM_GNSS);
 
-	error_state connect(String^ hostName, int portNumber) override;
 	error_state communicate() override;
 	void sendDisplayData();
 

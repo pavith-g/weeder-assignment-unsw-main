@@ -5,62 +5,36 @@ Display::Display(SM_ThreadManagement^ SM_TM, SM_Laser^ SM_LiDAR, SM_GPS^ SM_GNSS
 	SM_LiDAR_ = SM_LiDAR;
 	SM_GNSS_ = SM_GNSS;
 
+	ReadData = gcnew array<unsigned char>(256);
 	Display_Stopwatch = gcnew Stopwatch;
 }
 
-
-// TODO: Move Connect function to parent
-error_state Display::connect(String^ hostName, int portNumber) {
-	Console::WriteLine("Attempting to connect to Display");
-	disconnect();
-
-	ReadData = gcnew array<unsigned char>(2048);
-
-	try
-	{
-		Client = gcnew TcpClient();
-
-		Client->ReceiveBufferSize = 2048;
-		Client->ReceiveTimeout = 500;
-		Client->NoDelay = true;
-
-		IAsyncResult^ asyncResult = Client->BeginConnect(hostName, portNumber, nullptr, nullptr);
-		bool connected = asyncResult->AsyncWaitHandle->WaitOne(1500, false);
-
-		if (!connected)
-		{
-			disconnect();
-			return error_state::ERR_CONNECTION;
-		}
-
-		Client->EndConnect(asyncResult);
-
-
-		if (!Client->Connected)
-		{
-			disconnect();
-			return error_state::ERR_STARTUP;
-		}
-
-		Stream = Client->GetStream();
-		ReadData = gcnew array<unsigned char>(Client->ReceiveBufferSize);
+error_state Display::communicate() {
+	if (verifyConnection() != error_state::SUCCESS) {
+		return error_state::ERR_CONNECTION;
+	}
+	try {
+		sendDisplayData();
 		return error_state::SUCCESS;
 	}
-
-	catch (Exception^)
-	{
+	catch (System::IO::IOException^) {
 		disconnect();
-		return error_state::ERR_STARTUP;
+		return error_state::ERR_CONNECTION;
 	}
-}
 
-error_state Display::communicate() {
-	sendDisplayData();
-	return error_state::SUCCESS;
+	catch (System::Net::Sockets::SocketException^) {
+		disconnect();
+		return error_state::ERR_CONNECTION;
+	}
 }
 
 
 void Display::sendDisplayData() {
+
+	if (Stream == nullptr) {
+		throw gcnew System::IO::IOException("Display Stream Null");
+	}
+
 	Monitor::Enter(SM_LiDAR_->lockObject);
 
 	array<Byte>^ dataX = gcnew array<Byte>(SM_LiDAR_->x->Length * sizeof(double));
@@ -116,9 +90,20 @@ void Display::threadFunction() {
 	Display_Stopwatch->Start();
 	
 	while (!getShutdownFlag()) {
-		sendDisplayData();
-		processHeartBeats();
+		error_state response;
+		try {
+			response = communicate();
+		}
+		catch (Exception^ ) {
+			selfShutDown();
+		}
+
+		if (response == error_state::SUCCESS) {
+			processHeartBeats();
+		}
 		Thread::Sleep(10);
 	}
+
+
 	Console::WriteLine("Display Thread Terminated");
 }

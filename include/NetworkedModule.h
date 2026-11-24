@@ -28,7 +28,47 @@ namespace ports {
 ref class NetworkedModule abstract : public UGVModule
 {
 public:
-	virtual error_state connect(String^ hostName, int portNumber) = 0;	// Establish TCP connection
+	// Establish TCP connection
+	virtual error_state connect(String^ hostName, int portNumber) {
+		disconnect();
+		try
+		{
+			Client = gcnew TcpClient();
+
+			Client->ReceiveBufferSize = 2048;
+			Client->ReceiveTimeout = 500;
+			Client->NoDelay = true;
+
+			IAsyncResult^ asyncResult = Client->BeginConnect(hostName, portNumber, nullptr, nullptr);
+			bool connected = asyncResult->AsyncWaitHandle->WaitOne(1500, false);
+
+			if (!connected)
+			{
+				disconnect();
+				return error_state::ERR_CONNECTION;
+			}
+
+			Client->EndConnect(asyncResult);
+
+
+			if (!Client->Connected)
+			{
+				disconnect();
+				return error_state::ERR_STARTUP;
+			}
+
+			Stream = Client->GetStream();
+			ReadData = gcnew array<unsigned char>(Client->ReceiveBufferSize);
+			return error_state::SUCCESS;
+		}
+
+		catch (Exception^)
+		{
+			disconnect();
+			return error_state::ERR_STARTUP;
+		}
+	}
+
 	virtual error_state communicate() = 0;								// Communicate over TCP connection (includes any error checking required on data)
 	void disconnect()													// Release existing connections
 	{
