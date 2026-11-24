@@ -1,6 +1,7 @@
 #include "TMM.h"
 #include "LiDAR.h"
 #include "Display.h"
+#include "GNSS.h"
 
 
 
@@ -31,35 +32,56 @@ void ThreadManagement::selfShutDown() {
 }
 
 error_state ThreadManagement::processHeartBeats() {
-	for (int i = 0; i < ThreadList->Length; i++)
-	{
-		if (SM_TM_->heartbeat & ThreadPropertiesList[i]->BitID)
-		{
-			// High, put to low
-			SM_TM_->heartbeat &= ~ThreadPropertiesList[i]->BitID;
-			// Restart stopwatch
+	if (ThreadList == nullptr || ThreadPropertiesList == nullptr ||
+		SM_TM_ == nullptr || SM_TM_->WatchList == nullptr) {
+		return error_state::ERR_SM;
+	}
+
+	int count = ThreadList->Length;
+	if (ThreadPropertiesList->Length < count || SM_TM_->WatchList->Length < count) {
+		return error_state::ERR_SM;
+	}
+
+	for (int i = 0; i < count; i++) {
+		if (ThreadPropertiesList[i] == nullptr || SM_TM_->WatchList[i] == nullptr) {
+			continue;
+		}
+
+		unsigned int bitId = ThreadPropertiesList[i]->BitID;
+
+		if ((SM_TM_->heartbeat & bitId) != 0) {
+			// Heartbeat Received
+			SM_TM_->heartbeat &= ~bitId;
 			SM_TM_->WatchList[i]->Restart();
 		}
 
-		else
-		{	
-			if (SM_TM_->WatchList[i]->ElapsedMilliseconds > CRASH_LIMIT)
-			{
-				// Check if critical
-				if (ThreadPropertiesList[i]->BitID & CRITICALMASK)
-				{
-					Console::WriteLine(ThreadPropertiesList[i]->ThreadName + " (critical)failure.Shutting down all threads");
-					shutdownModules();
-					return error_state::ERR_CRITICAL_THREAD_FAILURE;
+		else if (SM_TM_->WatchList[i]->ElapsedMilliseconds > CRASH_LIMIT) {
+			if ((bitId & CRITICALMASK) != 0) {
+				Console::WriteLine(
+					"{0} Critical Failure. Shutting down all threads",
+					ThreadPropertiesList[i]->ThreadName
+				);
+				shutdownModules();
+				return error_state::ERR_CRITICAL_THREAD_FAILURE;
+			}
+			else {
+				Console::WriteLine(
+					"{0} Failed. Restarting.",
+					ThreadPropertiesList[i]->ThreadName
+				);
+
+				if (ThreadList[i] != nullptr && ThreadList[i]->IsAlive) {
+					try {
+						ThreadList[i]->Abort();
+					}
+					catch (Exception^) {}
 				}
-				else
-				{
-					Console::WriteLine(ThreadPropertiesList[i]->ThreadName + " failed...Restarting");
-					ThreadList[i]->Abort();
-					ThreadList[i] = gcnew Thread(ThreadPropertiesList[i]->ThreadStart_);
-					SM_TM_->ThreadBarrier = gcnew Barrier(1);
-					ThreadList[i]->Start();
-				}
+
+				SM_TM_->shutdown &= ~bitId;
+				SM_TM_->WatchList[i]->Restart();
+
+				ThreadList[i] = gcnew Thread(ThreadPropertiesList[i]->ThreadStart_);
+				ThreadList[i]->Start();
 			}
 		}
 	}
@@ -87,6 +109,12 @@ void ThreadManagement::threadFunction() {
 			gcnew ThreadStart(gcnew Display(SM_TM_, SM_LiDAR_, SM_GNSS_),
 				&Display::threadFunction),
 			"Display Thread", bit_DISPLAY
+		),
+		gcnew ThreadProperties
+		(
+			gcnew ThreadStart(gcnew GNSS(SM_TM_, SM_GNSS_), 
+				&GNSS::threadFunction),
+			"GNSS Thread", bit_GPS
 		),
 			// Add Other Threads Later
 	};
@@ -126,6 +154,7 @@ void ThreadManagement::threadFunction() {
 			ConsoleKeyInfo^ keyInfo = Console::ReadKey();
 
 			if (keyInfo->Key == ConsoleKey::Q) {
+				Console::WriteLine("Quit Key Pressed. Shutting down all modules");
 				shutdownModules();
 				break;
 			}
@@ -135,18 +164,22 @@ void ThreadManagement::threadFunction() {
 		Thread::Sleep(50);
 
 	}
-
-
-	shutdownModules();
+		
+	Console::WriteLine("Joining Threads");
 
 	// Join all threads
 	for (int i = 0; i < ThreadPropertiesList->Length; i++)
 	{
-		ThreadList[i]->Join();
+		if (ThreadList[i] != nullptr) {
+			Console::WriteLine("Joining {0}...", ThreadPropertiesList[i]->ThreadName);
+			if (!ThreadList[i]->Join(3000)) {
+				Console::WriteLine("Warning: {0} did not exit within 3000 ms", ThreadPropertiesList[i]->ThreadName);
+			}
+
+		}
 	}
 
 	Console::WriteLine("TMM Terminated");
-	// while (1);
 }
 
 
