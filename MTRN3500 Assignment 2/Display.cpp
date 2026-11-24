@@ -4,12 +4,14 @@ Display::Display(SM_ThreadManagement^ SM_TM, SM_Laser^ SM_LiDAR, SM_GPS^ SM_GNSS
 	SM_TM_ = SM_TM;
 	SM_LiDAR_ = SM_LiDAR;
 	SM_GNSS_ = SM_GNSS;
+
+	Display_Stopwatch = gcnew Stopwatch;
 }
 
 
 // TODO: Move Connect function to parent
 error_state Display::connect(String^ hostName, int portNumber) {
-	Console::WriteLine("Attempting to connect to LiDAR");
+	Console::WriteLine("Attempting to connect to Display");
 	disconnect();
 
 	ReadData = gcnew array<unsigned char>(2048);
@@ -42,8 +44,6 @@ error_state Display::connect(String^ hostName, int portNumber) {
 
 		Stream = Client->GetStream();
 		ReadData = gcnew array<unsigned char>(Client->ReceiveBufferSize);
-
-		Console::WriteLine("Connection Success");
 		return error_state::SUCCESS;
 	}
 
@@ -85,7 +85,11 @@ error_state Display::processHeartBeats() {
 	return error_state::SUCCESS;
 }
 
-error_state SetupSharedMemory() {
+error_state Display::SetupSharedMemory() {
+	return error_state::SUCCESS;
+}
+
+error_state Display::processSharedMemory() {
 	return error_state::SUCCESS;
 }
 
@@ -112,6 +116,9 @@ void Display::threadFunction() {
 	Display_Stopwatch->Start();
 	
 	while (!getShutdownFlag()) {
-
+		sendDisplayData();
+		processHeartBeats();
+		Thread::Sleep(10);
 	}
+	Console::WriteLine("Display Thread Terminated");
 }
