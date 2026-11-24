@@ -1,9 +1,8 @@
+#include "Controller.h"
 #include "TMM.h"
 #include "LiDAR.h"
 #include "Display.h"
 #include "GNSS.h"
-
-
 
 error_state ThreadManagement::SetupSharedMemory() {
 	// Create a thread for each module
@@ -104,18 +103,25 @@ void ThreadManagement::threadFunction() {
 			"LiDAR Thread", bit_LASER
 		),
 
-		gcnew ThreadProperties
-		(
-			gcnew ThreadStart(gcnew Display(SM_TM_, SM_LiDAR_, SM_GNSS_),
-				&Display::threadFunction),
-			"Display Thread", bit_DISPLAY
-		),
-		gcnew ThreadProperties
-		(
-			gcnew ThreadStart(gcnew GNSS(SM_TM_, SM_GNSS_), 
-				&GNSS::threadFunction),
-			"GNSS Thread", bit_GPS
-		),
+			gcnew ThreadProperties
+			(
+				gcnew ThreadStart(gcnew Display(SM_TM_, SM_LiDAR_, SM_GNSS_),
+					&Display::threadFunction),
+				"Display Thread", bit_DISPLAY
+			),
+			gcnew ThreadProperties
+			(
+				gcnew ThreadStart(gcnew GNSS(SM_TM_, SM_GNSS_),
+					&GNSS::threadFunction),
+				"GNSS Thread", bit_GPS
+			),
+
+			gcnew ThreadProperties
+			(
+				gcnew ThreadStart(gcnew Controller(SM_TM_, SM_VC_),
+					&Controller::threadFunction),
+				"Controller Thread", bit_CONTROLLER
+			)
 			// Add Other Threads Later
 	};
 
