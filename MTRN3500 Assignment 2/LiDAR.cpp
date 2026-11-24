@@ -45,8 +45,6 @@ error_state LiDAR::connect(String^ hostName, int portNumber)
 
 		Stream = Client->GetStream();
 		ReadData = gcnew array<unsigned char>(Client->ReceiveBufferSize);
-
-		Console::WriteLine("Connection Success");
 		return error_state::SUCCESS;
 	}
 
@@ -76,7 +74,6 @@ error_state LiDAR::authenticate(String^ id) {
 	String^ Response = Encoding::ASCII->GetString(ReadData, 0, bytesRead);
 
 	if (Response == "OK\n") {
-		Console::WriteLine("LiDAR Authenticated");
 		return error_state::SUCCESS;
 	}
 	return error_state::ERR_CONNECTION;
@@ -308,7 +305,7 @@ void LiDAR::threadFunction()
 			processSharedMemory();
 			processHeartBeats();
 			// Console::WriteLine("lidar alive");
-			outputDataToTerminal();
+			// outputDataToTerminal();
 
 		}
 		Thread::Sleep(10);
