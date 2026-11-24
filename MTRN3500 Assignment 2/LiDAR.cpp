@@ -267,7 +267,5 @@ void LiDAR::threadFunction()
 		Thread::Sleep(10);
 	}
 	Console::WriteLine("LiDAR Thread terminated");
-
-	return;
 }
 
