@@ -92,9 +92,3 @@ public:
         lockObject = gcnew Object();
     }
 };
-
-ref class SM_Display
-{
-public:
-    // TODO
-};

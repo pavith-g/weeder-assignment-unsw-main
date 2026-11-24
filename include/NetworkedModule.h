@@ -83,7 +83,7 @@ public:
 		return error_state::SUCCESS;
 	}
 	virtual error_state communicate() = 0;								// Communicate over TCP connection (includes any error checking required on data)
-	void disconnect()													// Release existing connections
+	virtual void disconnect()													// Release existing connections
 	{
 		if (Stream != nullptr)
 		{
