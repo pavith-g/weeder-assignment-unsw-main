@@ -14,7 +14,7 @@ For clarification of inheritance requirements see diagram in the assignment spec
 #include <iostream>
 #include <SMObjects.h>
 
-#define CRASH_LIMIT 150
+#define CRASH_LIMIT 500
 
 // ERROR HANDLING. Use this as the return value in your functions
 enum error_state {
