@@ -23,13 +23,24 @@ error_state VC::processHeartBeats() {
 	return error_state::SUCCESS;
 }
 
-error_state VC::sendCommand(double steer, double speed, int wdog) {
+error_state VC::sendCommand(double steer, double speed, int wdog, bool inhibit) {
 
 	if (verifyConnection() != error_state::SUCCESS) {
 		return error_state::ERR_CONNECTION;
 	}
 
-	String^ command = "# " + steer.ToString() + " " + speed.ToString() + " " + wdog.ToString() + " #";
+	double tempSteer = steer;
+	double tempSpeed = speed;
+
+	// Check if vehicle is inhibited by crash avoidance. 
+	// Allow reverse motion
+	if (inhibit && tempSpeed > 0.0) {
+		// tempSteer = 0;
+		tempSpeed = 0;
+	}
+	
+
+	String^ command = "# " + tempSteer.ToString() + " " + tempSpeed.ToString() + " " + wdog.ToString() + " #";
 
 	// Console::WriteLine(command);
 
@@ -62,6 +73,7 @@ error_state VC::processSharedMemory() {
 	double steer = 0.0;
 	double speed = 0.0;
 	bool wdog = false;
+	bool inhibit = false;
 
 	bool lockTaken = false;
 
@@ -70,6 +82,7 @@ error_state VC::processSharedMemory() {
 		steer = SM_VC_->Steering;
 		speed = SM_VC_->Speed;
 		wdog = SM_VC_->wdog;
+		inhibit = SM_VC_->inhibit;
 		SM_VC_->wdog = !wdog;
 	}
 
@@ -83,7 +96,7 @@ error_state VC::processSharedMemory() {
 		}
 	}
 
-	return sendCommand(steer, speed, wdog ? 1 : 0);
+	return sendCommand(steer, speed, wdog ? 1 : 0, inhibit);
 }
 
 bool VC::getShutdownFlag() {
@@ -153,7 +166,7 @@ void VC::threadFunction() {
 
 		for (int i = 0; i < 5; i++) {
 			// Send multiple zero commands for redundancy
-			status = sendCommand(0.0, 0.0, nextWdog ? 1: 0); 
+			status = sendCommand(0.0, 0.0, nextWdog ? 1: 0, false); 
 			if (status != error_state::SUCCESS) {
 				break;
 			}

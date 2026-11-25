@@ -11,7 +11,7 @@ public:
 	error_state	SetupSharedMemory() override;
 	error_state processHeartBeats() override;
 	error_state processSharedMemory() override;
-	error_state sendCommand(double steer, double speed, int wdog);
+	error_state sendCommand(double steer, double speed, int wdog, bool inhibit);
 	error_state communicate() override;
 	bool getShutdownFlag() override;
 	void threadFunction() override;
