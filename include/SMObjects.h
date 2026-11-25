@@ -88,6 +88,7 @@ public:
     double Speed;
     double Steering;
     bool wdog;
+    bool inhibit;           // Crash Avoidance
 
     SM_VehicleControl() {
         lockObject = gcnew Object();
