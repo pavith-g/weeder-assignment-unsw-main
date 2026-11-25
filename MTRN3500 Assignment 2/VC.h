@@ -8,13 +8,18 @@ ref class VC : public NetworkedModule
 public:
 	VC(SM_ThreadManagement^ SM_TM, SM_VehicleControl^ SM_VC);
 
-	error_state	setupSharedMemory() override;
+	error_state	SetupSharedMemory() override;
 	error_state processHeartBeats() override;
 	error_state processSharedMemory() override;
-	bool getShudownFlag() override;
+	error_state sendCommand(double steer, double speed, int wdog);
+	error_state communicate() override;
+	bool getShutdownFlag() override;
 	void threadFunction() override;
+	void selfShutDown() override;
+
+
 
 private:
-	SM_VehicleControl^ SM_VC;
+	SM_VehicleControl^ SM_VC_;
 	Stopwatch^ VC_Stopwatch;
 };
