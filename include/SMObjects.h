@@ -87,6 +87,7 @@ public:
     Object^ lockObject;
     double Speed;
     double Steering;
+    bool wdog;
 
     SM_VehicleControl() {
         lockObject = gcnew Object();
