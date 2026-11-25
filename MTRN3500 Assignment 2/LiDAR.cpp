@@ -79,6 +79,8 @@ error_state LiDAR::communicate()
 		return error_state::ERR_INVALID_DATA;
 	}
 
+	array<double>^ tempX = gcnew array<double>(STANDARD_LASER_LENGTH);
+	array<double>^ tempY = gcnew array<double>(STANDARD_LASER_LENGTH);
 
 	// Store data
 	for (int i = 0; i < STANDARD_LASER_LENGTH; i++) {
@@ -87,21 +89,22 @@ error_state LiDAR::communicate()
 		// double angleRad = (i * 0.5) * (Math::PI / 180.0);
 		double angleDegrees = i * angleWidth + startAngle;
 		double angleRad = angleDegrees * (Math::PI / 180.0);
-		
-		bool lockTaken = false;
-		try {
-			Monitor::Enter(SM_LiDAR_->lockObject, lockTaken);
 
-			double x = distMm * Math::Sin(angleRad);
-			double y = -distMm * Math::Cos(angleRad);
-			SM_LiDAR_->x[i] = x;
-			SM_LiDAR_->y[i] = y;
-		}
-		finally {
-			if (lockTaken) {
-				Monitor::Exit(SM_LiDAR_->lockObject);
+		tempX[i] = distMm * Math::Sin(angleRad);
+		tempY[i] = -distMm * Math::Cos(angleRad);
+	}
 
-			}
+	bool lockTaken = false;
+	try {
+		Monitor::Enter(SM_LiDAR_->lockObject, lockTaken);
+		Array::Copy(tempX, SM_LiDAR_->x, STANDARD_LASER_LENGTH);
+		Array::Copy(tempY, SM_LiDAR_->y, STANDARD_LASER_LENGTH);
+
+	}
+	finally {
+		if (lockTaken) {
+			Monitor::Exit(SM_LiDAR_->lockObject);
+
 		}
 	}
 	return error_state::SUCCESS;
@@ -221,7 +224,6 @@ void LiDAR::threadFunction()
 		try
 		{
 			response = communicate();
-
 		}
 
 		catch (Exception^)
