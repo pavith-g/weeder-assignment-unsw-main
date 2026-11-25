@@ -3,6 +3,7 @@
 #include "LiDAR.h"
 #include "Display.h"
 #include "GNSS.h"
+#include "VC.h"
 
 error_state ThreadManagement::SetupSharedMemory() {
 	// Create a thread for each module
@@ -96,33 +97,35 @@ void ThreadManagement::threadFunction() {
 
 	ThreadPropertiesList = gcnew array<ThreadProperties^>
 	{
-		gcnew ThreadProperties
-		(
+		gcnew ThreadProperties(
 			gcnew ThreadStart(gcnew LiDAR(SM_TM_, SM_LiDAR_),
 				&LiDAR::threadFunction),
 			"LiDAR Thread", bit_LASER
 		),
 
-			gcnew ThreadProperties
-			(
+			gcnew ThreadProperties(
 				gcnew ThreadStart(gcnew Display(SM_TM_, SM_LiDAR_, SM_GNSS_),
 					&Display::threadFunction),
 				"Display Thread", bit_DISPLAY
 			),
-			gcnew ThreadProperties
-			(
+
+			gcnew ThreadProperties(
 				gcnew ThreadStart(gcnew GNSS(SM_TM_, SM_GNSS_),
 					&GNSS::threadFunction),
 				"GNSS Thread", bit_GPS
 			),
 
-			gcnew ThreadProperties
-			(
+			gcnew ThreadProperties(
 				gcnew ThreadStart(gcnew Controller(SM_TM_, SM_VC_),
 					&Controller::threadFunction),
 				"Controller Thread", bit_CONTROLLER
+			),
+
+			gcnew ThreadProperties(
+				gcnew ThreadStart(gcnew VC(SM_TM_, SM_VC_),
+					&VC::threadFunction),
+				"VC Thread", bit_VC
 			)
-			// Add Other Threads Later
 	};
 
 	// Create Thread List
@@ -144,7 +147,6 @@ void ThreadManagement::threadFunction() {
 	}
 
 	// wait at TMM barrier
-
 	SM_TM_->ThreadBarrier->SignalAndWait();
 
 	// Start Stopwatches
