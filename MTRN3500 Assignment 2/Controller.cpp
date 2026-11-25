@@ -24,6 +24,23 @@ Controller::!Controller() {
 }
 
 error_state	Controller::SetupSharedMemory() {
+	if (SM_VC_ == nullptr || SM_VC_->lockObject == nullptr) {
+		return error_state::ERR_SM;
+	}
+	bool lockTaken = false;
+	try {
+		Monitor::Enter(SM_VC_->lockObject, lockTaken);
+		SM_VC_->useCrashAvoidance = false;
+		SM_VC_->Speed = 0;
+		SM_VC_->Steering = 0;
+		SM_VC_->inhibit = false;
+	}
+	finally {
+		if (lockTaken) {
+			Monitor::Exit(SM_VC_->lockObject);
+		}
+	}
+
 	return error_state::SUCCESS;
 }
 
@@ -51,6 +68,7 @@ error_state Controller::updateState() {
 	rightTriggerVal = state.rightTrigger;
 	buttonX = state.buttonX;
 	rightThumbX = state.rightThumbX;
+	buttonY = state.buttonY;
 
 	return error_state::SUCCESS;
 }
@@ -94,6 +112,23 @@ void Controller::zeroControl() {
 	}
 }
 
+void Controller::toggleCrashAvoidance() {
+	if (SM_VC_ == nullptr || SM_VC_->lockObject == nullptr) {
+		return;
+	}
+	bool lockTaken = false;
+	try {
+		Monitor::Enter(SM_VC_->lockObject, lockTaken);
+		SM_VC_->useCrashAvoidance = !SM_VC_->useCrashAvoidance;
+		Console::WriteLine("Crash Avoidance Toggled: {0}", SM_VC_->useCrashAvoidance);
+	}
+	finally {
+		if (lockTaken) {
+			Monitor::Exit(SM_VC_->lockObject);
+		}
+	}
+}
+
 bool Controller::getShutdownFlag() {
 	return SM_TM_->shutdown & bit_CONTROLLER;
 }
@@ -120,6 +155,8 @@ void Controller::threadFunction() {
 		selfShutDown();
 	}
 
+	SetupSharedMemory();
+
 	SM_TM_->ThreadBarrier->SignalAndWait();
 	Controller_Stopwatch->Start();
 
@@ -142,6 +179,11 @@ void Controller::threadFunction() {
 					zeroControl();
 					SM_TM_->shutdown = 0xFF;
 					break;
+				}
+
+				if (buttonY) {
+					toggleCrashAvoidance();
+					Thread::Sleep(300);
 				}
 
 				processSharedMemory();

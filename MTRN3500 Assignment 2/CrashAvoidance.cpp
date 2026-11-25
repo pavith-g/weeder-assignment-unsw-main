@@ -16,7 +16,6 @@ error_state CrashAvoidance::SetupSharedMemory() {
 	return error_state::SUCCESS;
 }
 
-// TODO: add nullptr checks for all SM_TM_ heartbeat check
 error_state CrashAvoidance::processHeartBeats() {
 	if ((SM_TM_->heartbeat & bit_CRASHAVOIDANCE) == 0) {
 		SM_TM_->heartbeat |= bit_CRASHAVOIDANCE;
@@ -68,13 +67,16 @@ error_state CrashAvoidance::processSharedMemory() {
 
 
 	if (localSpeed > 0) {
+		constexpr double ugvWidth = 0.70;
+		constexpr double sideMargin = 0.10;
+		constexpr double halfWidth = (ugvWidth * 0.5) + sideMargin;
+		constexpr double wheelbase = 0.85; // Estimate 
+
 		double baseDist = 1.0 + 0.2 * localSpeed;
 		double stopDist = wasInhibited ? (baseDist + 0.05) : baseDist;
 
-		constexpr double halfWidth = 0.45;
-		constexpr double wheelbase = 0.70;
 		constexpr double minRangeSq = 0.05 * 0.05;
-		constexpr int minObstalcePoints = 3;
+		constexpr int minObstaclePoints = 3;
 
 		double deltaRad = -localSteerDeg * (Math::PI / 180.0);
 		bool isTurning = Math::Abs(localSteerDeg) >= 2;
@@ -115,7 +117,7 @@ error_state CrashAvoidance::processSharedMemory() {
 				}
 			}
 
-			if (inHazard && ++hitCount >= minObstalcePoints) {
+			if (inHazard && ++hitCount >= minObstaclePoints) {
 				inhibit = true;
 				break;
 			}

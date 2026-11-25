@@ -74,6 +74,7 @@ error_state VC::processSharedMemory() {
 	double speed = 0.0;
 	bool wdog = false;
 	bool inhibit = false;
+	bool useCrashAvoidance = false;
 
 	bool lockTaken = false;
 
@@ -82,6 +83,7 @@ error_state VC::processSharedMemory() {
 		steer = SM_VC_->Steering;
 		speed = SM_VC_->Speed;
 		wdog = SM_VC_->wdog;
+		useCrashAvoidance = SM_VC_->useCrashAvoidance;
 		inhibit = SM_VC_->inhibit;
 		SM_VC_->wdog = !wdog;
 	}
@@ -94,6 +96,10 @@ error_state VC::processSharedMemory() {
 		if (lockTaken) {
 			Monitor::Exit(SM_VC_->lockObject);
 		}
+	}
+
+	if (!useCrashAvoidance) {
+		inhibit = false;
 	}
 
 	return sendCommand(steer, speed, wdog ? 1 : 0, inhibit);

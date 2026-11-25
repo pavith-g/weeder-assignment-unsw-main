@@ -22,6 +22,7 @@ public:
 	error_state checkConnection();
 	error_state updateState();
 	void zeroControl();
+	void toggleCrashAvoidance();
 
 	double MapValue(double value, double fromLow, double fromHigh, double toLow, double toHigh);
 
@@ -35,6 +36,7 @@ private:
 	double rightTriggerVal;
 	
 	bool buttonX;
+	bool buttonY;
 
 	double rightThumbX;
 
