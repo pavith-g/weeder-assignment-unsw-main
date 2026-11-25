@@ -21,6 +21,7 @@ public:
 	void threadFunction() override;
 	error_state checkConnection();
 	error_state updateState();
+	void zeroControl();
 
 	double MapValue(double value, double fromLow, double fromHigh, double toLow, double toHigh);
 

@@ -57,7 +57,7 @@ error_state Controller::updateState() {
 
 error_state Controller::processSharedMemory() {
 	double Speed = rightTriggerVal - leftTriggerVal;
-	double tempSteer = rightThumbX;
+	double tempSteer = -rightThumbX;
 	double mappedSteer = MapValue(tempSteer, -1, 1, -40, 40);
 
 	bool lockTaken = false;
@@ -75,6 +75,23 @@ error_state Controller::processSharedMemory() {
 	
 	// Console::WriteLine("Written Speed: {0:F3}, Steer: {1:F3}", Speed, mappedSteer);
 	return error_state::SUCCESS;
+}
+
+void Controller::zeroControl() {
+	if (SM_VC_ == nullptr || SM_VC_->lockObject == nullptr) {
+		return;
+	}
+	bool lockTaken = false;
+	try {
+		Monitor::Enter(SM_VC_->lockObject, lockTaken);
+		SM_VC_->Speed = 0.0;
+		SM_VC_->Steering = 0.0;
+	}
+	finally {
+		if (lockTaken) {
+			Monitor::Exit(SM_VC_->lockObject);
+		}
+	}
 }
 
 bool Controller::getShutdownFlag() {
@@ -99,46 +116,50 @@ void Controller::threadFunction() {
 	Console::WriteLine("Controller Thread Starting");
 
 	if (checkConnection() != error_state::SUCCESS) {
+		zeroControl();
 		selfShutDown();
 	}
 
 	SM_TM_->ThreadBarrier->SignalAndWait();
-
 	Controller_Stopwatch->Start();
 
-	while (!getShutdownFlag()) {
-		error_state response;
-		try {
-			response = updateState();
-		}
-
-		catch (Exception^) {
-			selfShutDown();
-		}
-
-		if (response == error_state::SUCCESS) {
-			processSharedMemory();
-			processHeartBeats();
-
-			if (buttonX) {
-				selfShutDown();
-			}
-		}
-		Thread::Sleep(10);
-	}
-	Console::WriteLine("Controller Thread Terminated");
-
-	// Set speed and steering to 0
-	Console::WriteLine("Setting Speed and Steer to 0");
-	bool lockTaken = false;
 	try {
-		Monitor::Enter(SM_VC_->lockObject, lockTaken);
-		SM_VC_->Speed = 0.0;
-		SM_VC_->Steering = 0.0;
-	}
-	finally {
-		if (lockTaken) {
-			Monitor::Exit(SM_VC_->lockObject);
+		while (!getShutdownFlag()) {
+			error_state response;
+			try {
+				response = updateState();
+			}
+
+			catch (Exception^) {
+				zeroControl();
+				selfShutDown();
+				break;
+			}
+
+			if (response == error_state::SUCCESS) {
+				if (buttonX) {
+					Console::WriteLine("Controller Shutdown Button Pressed");
+					zeroControl();
+					SM_TM_->shutdown = 0xFF;
+					break;
+				}
+
+				processSharedMemory();
+				processHeartBeats();
+
+			}
+			else {
+				// Disconnect, set to zero
+				zeroControl();
+
+			}
+			Thread::Sleep(10);
 		}
 	}
+
+	finally {
+		zeroControl();
+		Console::WriteLine("Controller Thread Terminated");
+	}
+	
 }
