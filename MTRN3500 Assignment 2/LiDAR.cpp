@@ -11,30 +11,6 @@ LiDAR::LiDAR(SM_ThreadManagement^ SM_TM, SM_Laser^ SM_LiDAR)
 	ReadData = gcnew array<unsigned char>(4096);
 }
 
-error_state LiDAR::authenticate(String^ id) {
-	Console::WriteLine("Attempting to authenticate with LiDAR Service");
-	String^ command = id + "\n";
-	//sendCommand(command);
-
-	if (ReadData == nullptr || ReadData->Length == 0)
-	{
-		ReadData = gcnew array<unsigned char>(2048);
-	}
-
-	array<unsigned char>^ SendData = Encoding::ASCII->GetBytes(command);
-	Stream->Write(SendData, 0, SendData->Length);
-
-	Thread::Sleep(500);
-
-	int bytesRead = Stream->Read(ReadData, 0, ReadData->Length);
-	String^ Response = Encoding::ASCII->GetString(ReadData, 0, bytesRead);
-
-	if (Response == "OK\n") {
-		return error_state::SUCCESS;
-	}
-	return error_state::ERR_CONNECTION;
-}
-
 error_state LiDAR::communicate()
 {
 	if (ReadData == nullptr || ReadData->Length < 8192)
@@ -105,30 +81,27 @@ error_state LiDAR::communicate()
 
 
 	// Store data
-	for (int i = 0; i < STANDARD_LASER_LENGTH; i++)
-	{
+	for (int i = 0; i < STANDARD_LASER_LENGTH; i++) {
 		uint16_t distMm = Convert::ToUInt16(tokens[dataStartIndex + i], 16);
 
 		// double angleRad = (i * 0.5) * (Math::PI / 180.0);
 		double angleDegrees = i * angleWidth + startAngle;
 		double angleRad = angleDegrees * (Math::PI / 180.0);
 		
+		bool lockTaken = false;
+		try {
+			Monitor::Enter(SM_LiDAR_->lockObject, lockTaken);
 
-		Monitor::Enter(SM_LiDAR_);
-		try
-		{
 			double x = distMm * Math::Sin(angleRad);
 			double y = -distMm * Math::Cos(angleRad);
 			SM_LiDAR_->x[i] = x;
 			SM_LiDAR_->y[i] = y;
 		}
-		catch (Exception^)
-		{
-			Console::WriteLine("Writing to SM_LiDAR_ error");
-		}
-		finally
-		{
-			Monitor::Exit(SM_LiDAR_);
+		finally {
+			if (lockTaken) {
+				Monitor::Exit(SM_LiDAR_->lockObject);
+
+			}
 		}
 	}
 	return error_state::SUCCESS;

@@ -113,7 +113,27 @@ public:
 
 		ReadData = nullptr;
 	}
-	virtual error_state authenticate(String^ id) { return error_state::ERR_CONNECTION;  }
+	virtual error_state authenticate(String^ id) { 
+		String^ command = id + "\n";
+
+		if (ReadData == nullptr || ReadData->Length == 0)
+		{
+			ReadData = gcnew array<unsigned char>(2048);
+		}
+
+		array<unsigned char>^ SendData = Encoding::ASCII->GetBytes(command);
+		Stream->Write(SendData, 0, SendData->Length);
+
+		Thread::Sleep(500);
+
+		int bytesRead = Stream->Read(ReadData, 0, ReadData->Length);
+		String^ Response = Encoding::ASCII->GetString(ReadData, 0, bytesRead);
+
+		if (Response == "OK\n") {
+			return error_state::SUCCESS;
+		}
+		return error_state::ERR_CONNECTION;
+	}
 	
 	protected:
 		TcpClient^ Client;					// Handle for TCP connection

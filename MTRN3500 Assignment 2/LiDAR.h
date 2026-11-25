@@ -12,7 +12,6 @@ public:
 	LiDAR(SM_ThreadManagement^ SM_TM, SM_Laser^ SM_LiDAR);
 
 	error_state communicate() override;
-	error_state authenticate(String^ id) override;
 	void sendCommand(String^ command);
 	void outputDataToTerminal();
 	error_state	SetupSharedMemory() override;
